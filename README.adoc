@@ -1,0 +1,21 @@
+= xtype
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+:toc: left
+:toclevels: 5
+
+*xtype*, or Extended Type, is a dynamic type system library for Lua.
+
+Sometimes, advanced type checking code is needed to implement specific abstractions; *xtype* aims to fill that need.
+
+.Incentives:
+Automation:: Prevent writing redundant type checking code.
+Interoperability:: Having a general low-level type system library can ease the interactions of third-party code.
+Metaprogramming / Genericity:: Exploit the dynamic nature of Lua to generate definitions on-the-fly.
+
+See link:src[].
