@@ -38,6 +38,10 @@ local table_pack = table.pack or function(...)
   return t
 end
 
+local function error_arg(index, expected)
+  error("bad argument #2 ("..expected.." expected)")
+end
+
 -- xtype
 
 local xtype = {}
@@ -55,6 +59,10 @@ local type_mt = {
   __tostring = xtype_tostring
 }
 
+local function check_type(v, index)
+  if not (type(v) == "string" or xtype.is(v, "xtype")) then error_arg(index, "type") end
+end
+
 -- Create a type.
 --
 -- The created type is a table with 3 fields: xtype_name, xtype_stack and xtype_set.
@@ -66,15 +74,10 @@ local type_mt = {
 -- ...: base types, be specific in descending order
 -- return created type
 function xtype.create(name, ...)
-  if type(name) ~= "string" then error("invalid name") end
+  if type(name) ~= "string" then error_arg(1, "string") end
   -- check base types
   local bases = table_pack(...)
-  for i=1, bases.n do
-    local base = bases[i]
-    if not (type(base) == "string" or (type(base) == "table" and base.xtype_name)) then
-      error("invalid base type #"..i)
-    end
-  end
+  for i=1, bases.n do check_type(bases[i], i+1) end
   -- create
   local t = setmetatable({
     xtype_name = name,
@@ -128,7 +131,10 @@ local ctype_types = {} -- map of ctype id => type
 -- return bound type
 function xtype.ctype(ctype, t)
   local id = tonumber(ctype)
-  if t and not ctype_types[id] then ctype_types[id] = t end
+  if t and not ctype_types[id] then
+    check_type(t, 2)
+    ctype_types[id] = t
+  end
   return ctype_types[id]
 end
 
@@ -146,14 +152,16 @@ xtype.get = xtype_get
 
 -- Check if a value is of type t.
 function xtype.is(v, t)
+  check_type(t, 2)
   local vt = xtype_get(v)
-  if type(vt) == "table" then return vt.xtype_set[t] ~= nil
+  if type(vt) == "table" then return vt.xtype_set[t]
   else return vt == t end
 end
 
 -- Check if a type is of type ot.
 function xtype.of(t, ot)
-  if type(t) == "table" then return t.xtype_set[ot] ~= nil
+  check_type(t, 1); check_type(ot, 2)
+  if type(t) == "table" then return t.xtype_set[ot]
   else return t == ot end
 end
 
@@ -197,12 +205,7 @@ end
 -- Check and return signature.
 local function check_sign(...)
   local sign = table_pack(...)
-  for i=1, sign.n do
-    local t = sign[i]
-    if type(t) ~= "table" and type(t) ~= "string" then
-      error("invalid signature type #"..i)
-    end
-  end
+  for i=1, sign.n do check_type(sign[i], i) end
   return sign
 end
 
