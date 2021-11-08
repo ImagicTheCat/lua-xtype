@@ -64,7 +64,7 @@ A multifunction can have generators that are called when no definitions could be
 -- type would still be recognized as a "xtype".
 --
 -- name: human-readable string (doesn't have to be unique)
--- ...: base types, be specific in descending order
+-- ...: base types, ordered by descending proximity, to the least specific type
 -- return created type
 xtype.create(name, ...)
 
@@ -78,6 +78,13 @@ xtype.create(name, ...)
 -- t: (optional) type
 -- return bound type
 xtype.ctype(ctype, t)
+
+-- Check if a value is a valid type.
+xtype.check(t)
+
+-- Get the name of a type.
+-- return string or nothing if not a type
+xtype.name(t)
 
 -- Get terminal type of a value.
 xtype.get(v)
@@ -96,6 +103,26 @@ xtype.multifunction()
 -- map of Lua binary op name => multifunction
 -- (add, sub, mul, div, mod, pow, concat, eq, lt, le)
 xtype.op
+
+-- Low-level API.
+
+-- The type's xtype_stack field is a list of types ordered from the terminal
+-- type to the least specific inherited types.
+
+-- Stack distance to another type from a terminal type.
+-- return distance or nil/nothing if not of type ot
+xtype.typeDist(t, ot)
+
+-- Check and return signature (list of types).
+-- ...: types
+xtype.checkSign(...)
+
+-- Distance to another signature from a call signature.
+-- return distance or nothing if not generalizable to osign
+xtype.signDist(sign, osign)
+
+-- Return formatted signature string.
+xtype.formatSign(sign)
 
 -- Code generation tools.
 
@@ -139,4 +166,13 @@ multifunction:resolve(...)
 -- Call the multifunction.
 multifunction(...)
 multifunction:call(...)
+
+-- Low-level API.
+
+multifunction.definitions = {} -- map of sign hash => {.f, .sign}
+
+-- Hash function signature.
+-- sign: signature, list of types
+-- return number
+multifunction:hashSign(sign)
 ----

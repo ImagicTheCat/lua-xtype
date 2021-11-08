@@ -59,9 +59,55 @@ local type_mt = {
   __tostring = xtype_tostring
 }
 
+local xtype_is
+-- Check if a value is a valid type.
+local function xtype_check(t) return type(t) == "string" or xtype_is(t, "xtype") end
+xtype.check = xtype_check
+-- Check if an argument is a type.
 local function check_type(v, index)
-  if not (type(v) == "string" or xtype.is(v, "xtype")) then error_arg(index, "type") end
+  if not xtype_check(v) then error_arg(index, "type") end
 end
+
+local ctype_types = {} -- map of ctype id => type
+
+-- Get/bind a type to a ctype (LuaJIT FFI).
+--
+-- This can't be changed afterwards.
+-- The same type can be bound to different ctypes; it can be useful when
+-- different ctype qualifiers should match the same type.
+--
+-- ctype: cdata ctype object
+-- t: (optional) type
+-- return bound type
+function xtype.ctype(ctype, t)
+  local id = tonumber(ctype)
+  if t and not ctype_types[id] then
+    check_type(t, 2)
+    ctype_types[id] = t
+  end
+  return ctype_types[id]
+end
+
+-- Get terminal type of a value.
+local function xtype_get(v)
+  local v_type = type(v)
+  if v_type == "table" or v_type == "userdata" then
+    local mt = getmetatable(v)
+    return mt and mt.xtype or v_type
+  elseif v_type == "cdata" then
+    return ctype_types[tonumber(ffi.typeof(v))] or v_type
+  else return v_type end
+end
+xtype.get = xtype_get
+
+-- Check if a value is of type t.
+xtype_is = function(v, t)
+  check_type(t, 2)
+  local vt = xtype_get(v)
+  if type(vt) == "table" then return vt.xtype_set[t]
+  else return vt == t end
+end
+xtype.is = xtype_is
 
 -- Create a type.
 --
@@ -71,7 +117,7 @@ end
 -- type would still be recognized as a "xtype".
 --
 -- name: human-readable string (doesn't have to be unique)
--- ...: base types, be specific in descending order
+-- ...: base types, ordered by descending proximity, to the least specific type
 -- return created type
 function xtype.create(name, ...)
   if type(name) ~= "string" then error_arg(1, "string") end
@@ -118,51 +164,17 @@ function xtype.create(name, ...)
   return t
 end
 
-local ctype_types = {} -- map of ctype id => type
-
--- Get/bind a type to a ctype (LuaJIT FFI).
---
--- This can't be changed afterwards.
--- The same type can be bound to different ctypes; it can be useful when
--- different ctype qualifiers should match the same type.
---
--- ctype: cdata ctype object
--- t: (optional) type
--- return bound type
-function xtype.ctype(ctype, t)
-  local id = tonumber(ctype)
-  if t and not ctype_types[id] then
-    check_type(t, 2)
-    ctype_types[id] = t
-  end
-  return ctype_types[id]
-end
-
--- Get terminal type of a value.
-local function xtype_get(v)
-  local v_type = type(v)
-  if v_type == "table" or v_type == "userdata" then
-    local mt = getmetatable(v)
-    return mt and mt.xtype or v_type
-  elseif v_type == "cdata" then
-    return ctype_types[tonumber(ffi.typeof(v))] or v_type
-  else return v_type end
-end
-xtype.get = xtype_get
-
--- Check if a value is of type t.
-function xtype.is(v, t)
-  check_type(t, 2)
-  local vt = xtype_get(v)
-  if type(vt) == "table" then return vt.xtype_set[t]
-  else return vt == t end
-end
-
 -- Check if a type is of type ot.
 function xtype.of(t, ot)
   check_type(t, 1); check_type(ot, 2)
   if type(t) == "table" then return t.xtype_set[ot]
   else return t == ot end
+end
+
+-- Get the name of a type.
+-- return string or nothing if not a type
+function xtype.name(t)
+  if xtype_check(t) then return type(t) == "string" and t or t.xtype_name end
 end
 
 -- Multifunction.
@@ -176,6 +188,48 @@ local function multifunction_tostring(t)
 end
 
 local multifunction = {}
+
+-- Check and return signature (list of types).
+-- ...: types
+local function check_sign(...)
+  local sign = table_pack(...)
+  for i=1, sign.n do check_type(sign[i], i) end
+  return sign
+end
+xtype.checkSign = check_sign
+
+-- Return formatted signature string.
+local function format_sign(sign)
+  local names = {}
+  for _, t in ipairs(sign) do
+    table.insert(names, type(t) == "string" and t or t.xtype_name)
+  end
+  return "("..table.concat(names, ", ")..")"
+end
+xtype.formatSign = format_sign
+
+-- Stack distance to another type from a terminal type.
+-- return distance or nil/nothing if not of type ot
+local function type_dist(t, ot)
+  if type(t) == "string" then return t == ot and 0 or nil end
+  for i, st in ipairs(t.xtype_stack) do
+    if st == ot then return i-1 end
+  end
+end
+xtype.typeDist = type_dist
+
+-- Distance to another signature from a call signature.
+-- return distance or nothing if not generalizable to osign
+local function sign_dist(sign, osign)
+  local dist = 0
+  for i=1, #sign do
+    local tdist = type_dist(sign[i], osign[i])
+    if not tdist then return end
+    dist = dist+tdist
+  end
+  return dist
+end
+xtype.signDist = sign_dist
 
 -- Create hash sign tree.
 local function new_hsign()
@@ -201,43 +255,7 @@ local function mf_hash_sign(self, sign)
   for _, t in ipairs(sign) do node = node[t] end
   return node[1]
 end
-
--- Check and return signature.
-local function check_sign(...)
-  local sign = table_pack(...)
-  for i=1, sign.n do check_type(sign[i], i) end
-  return sign
-end
-
--- return formatted signature string
-local function format_sign(sign)
-  local names = {}
-  for _, t in ipairs(sign) do
-    table.insert(names, type(t) == "string" and t or t.xtype_name)
-  end
-  return "("..table.concat(names, ", ")..")"
-end
-
--- Stack distance to another type from a terminal type.
--- return distance or nil if not of type ot
-local function type_dist(t, ot)
-  if type(t) == "string" then return t == ot and 0 or nil end
-  for i, st in ipairs(t.xtype_stack) do
-    if st == ot then return i-1 end
-  end
-end
-
--- Distance to another signature from a call signature.
--- return distance or nil if not generalizable to osign
-local function sign_dist(sign, osign)
-  local dist = 0
-  for i=1, #sign do
-    local tdist = type_dist(sign[i], osign[i])
-    if not tdist then return end
-    dist = dist+tdist
-  end
-  return dist
-end
+multifunction.hashSign = mf_hash_sign
 
 -- Find candidate.
 -- return candidate or nil if none found
@@ -393,11 +411,10 @@ function xtype.multifunction()
     __index = multifunction,
     __call = default_call
   }
-
   return setmetatable({
     hsign = new_hsign(),
     definitions = {}, -- map of sign hash => {.f, .sign}
-    generators = {},
+    generators = {}, -- set of generator functions
     candidates = {}, -- cached candidates, map of hash => {def, dist}
     max_calln = 0, -- maximum call parameters
     call = default_call
