@@ -32,7 +32,13 @@ A non-primitive type is a table defining the type. It contains the `xtype_name`,
 
 ==== Value
 
-Any Lua value has a type; we will call this the terminal type of the value as opposed to inherited types. If the metatable of a `table` or `userdata` value has a `xtype` field, then the type is the value of that field. If the value is a `cdata`, its type is defined by `xtype.ctype()`. Otherwise, the type is the Lua type returned by `type()`.
+Any Lua value has a type; we will call this the terminal type of the value as opposed to inherited types.
+
+If the metatable of a `table` or `userdata` value has a `xtype` field, then the type is the value of that field.
+
+If the value is a `cdata`, its type is defined by `xtype.ctype()` or the `\__xtype` field (e.g. through the metatype `__index`) which will call `xtype.ctype()` when encountered.
+
+Otherwise, the type is the Lua type returned by `type()`.
 
 ==== Inheritance
 

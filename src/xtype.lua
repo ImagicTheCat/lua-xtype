@@ -95,7 +95,12 @@ local function xtype_get(v)
     local mt = getmetatable(v)
     return mt and mt.xtype or v_type
   elseif v_type == "cdata" then
-    return ctype_types[tonumber(ffi.typeof(v))] or v_type
+    local xt = ctype_types[tonumber(ffi.typeof(v))]
+    if not xt then -- try to acquire type from field
+      local ok; ok, xt = pcall(function(v) return v.__xtype end, v)
+      if ok then xtype.ctype(ffi.typeof(v), xt) end
+    end
+    return xt or v_type
   else return v_type end
 end
 xtype.get = xtype_get
