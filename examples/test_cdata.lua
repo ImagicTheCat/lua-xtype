@@ -1,6 +1,10 @@
 -- Test FFI cdata support.
 package.path = "src/?.lua;"..package.path
-local ffi = require("ffi")
+
+-- No need to test if the FFI is not available.
+local ffi_ok, ffi = pcall(require, "ffi")
+if not ffi_ok then return end
+
 local xtype = require("xtype")
 
 do -- test vec example
@@ -29,6 +33,7 @@ do -- test vec example
   xtype.op.eq:define(function(a, b) return a.x == b.x and a.y == b.y end, vec2, vec2)
   -- bind
   xtype.ctype(vec2_t, vec2)
+  -- checks
   assert(vec2(1,1) == vec2(1,1))
   assert(vec2(1,1)*2 == 2*vec2(1,1))
   assert(vec2(1,1)+vec2(1,1) == vec2(4,4)/2)

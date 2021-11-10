@@ -39,7 +39,7 @@ local table_pack = table.pack or function(...)
 end
 
 local function error_arg(index, expected)
-  error("bad argument #2 ("..expected.." expected)")
+  error("bad argument #"..index.." ("..expected.." expected)")
 end
 
 -- xtype

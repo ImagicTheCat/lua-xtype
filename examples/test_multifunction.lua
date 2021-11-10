@@ -2,7 +2,7 @@
 package.path = "src/?.lua;"..package.path
 local xtype = require("xtype")
 
-do -- Basic test.
+do -- Test operators.
   local op_add = xtype.multifunction()
   local op_mul = xtype.multifunction()
   local op_eq = xtype.multifunction()
@@ -41,34 +41,43 @@ do -- Basic test.
 
   local apples = Apples(5)
   local oranges = Oranges(5)
+  -- checks
+  assert(xtype.is(op_eq, "multifunction"))
+  assert(xtype.get(op_eq) == "multifunction")
   assert(apples+apples == Apples(10))
+  assert(op_add:call(apples, apples) == Apples(10)) -- alternative
+  assert(op_add:resolve(Apples, Apples)(apples, apples) == Apples(10)) -- alternative
   assert(not (apples+oranges == Apples(10)))
   assert(apples+oranges == Fruits(10))
   assert(oranges+apples == Fruits(10))
   assert(apples*3 == Apples(15))
 end
-
 do -- Test resolution order.
+  -- types
   local animal = xtype.create("animal")
   local dog = xtype.create("dog", animal)
   local cat = xtype.create("cat", animal)
   local chimera = xtype.create("chimera", cat, dog)
-
+  -- multifunction
   local what = xtype.multifunction()
   what:define(function() return "animal" end, animal)
   what:define(function() return "cat" end, cat)
   what:define(function() return "dog" end, dog)
   what:define(function() return "chimera" end, chimera)
   local a = setmetatable({}, {xtype = chimera})
+  -- checks
   assert(what(a) == "chimera")
+  assert(what:call(a) == "chimera") -- alternative
+  assert(what:resolve(chimera)(a) == "chimera") -- alternative
   what:define(nil, chimera)
   assert(what(a) == "cat")
   what:define(nil, cat)
   assert(what(a) == "dog")
   what:define(nil, dog)
   assert(what(a) == "animal")
+  assert(what:call(a) == "animal") -- alternative
+  assert(what:resolve(chimera)(a) == "animal") -- alternative
 end
-
 do -- Test generator.
   local unpack = table.unpack or unpack
   local count = xtype.multifunction()
@@ -76,9 +85,15 @@ do -- Test generator.
     local sign = {...}
     self:define(function() return #sign end, unpack(sign))
   end)
+  -- checks
   assert(count() == 0)
   assert(count(1, 2, 3) == 3)
   assert(count("a", "b", "c") == 3)
   assert(count(nil, nil, nil) == 3)
   assert(count(1, nil, "c") == 3)
+  -- check low-level API
+  for hash, def in pairs(count.definitions) do
+    assert(hash == count:hashSign(def.sign))
+    assert(#def.sign == def.f())
+  end
 end

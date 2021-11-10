@@ -2,25 +2,31 @@
 package.path = "src/?.lua;"..package.path
 local xtype = require("xtype")
 
--- Expect an error.
-local function check(f)
-  local ok, err = pcall(f)
-  assert(not ok)
-  print("[checked]", err)
+local function errcheck(perr, f, ...)
+  local ok, err = pcall(f, ...)
+  assert(not ok and not not err:find(perr))
 end
 
-check(function() xtype.create() end)
-check(function() xtype.create(5) end)
-
-local mf = xtype.multifunction()
-check(function() mf:define(function() end, nil) end)
-check(function() mf:define(function() end, 1) end)
-check(function() mf:define(nil, "number", nil, "number") end)
-mf:define(function() end, "number", "number")
-check(function() mf() end)
-check(function() mf(5) end)
-check(function() mf(5, 5, 5) end)
-check(function() mf(5, "5") end)
-mf:define(nil, "number", "number")
-check(function() mf(5, 5) end)
+do -- test xtype
+  errcheck("bad argument #1", xtype.create)
+  errcheck("bad argument #1", xtype.create, 5)
+  errcheck("bad argument #2", xtype.create, "test", 5)
+  errcheck("bad argument #2", xtype.is, 5, nil)
+  errcheck("bad argument #1", xtype.of, 5, "number")
+  errcheck("bad argument #2", xtype.of, "number", 5)
+end
+do -- test multifunction
+  local mf = xtype.multifunction()
+  errcheck("type expected", mf.define, mf, function() end, nil)
+  errcheck("type expected", mf.define, mf, function() end, 1)
+  errcheck("type expected", mf.define, mf, nil, "number", nil, "number")
+  mf:define(function() end, "number", "number")
+  mf(5,5)
+  errcheck("unresolved call signature", mf)
+  errcheck("unresolved call signature", mf, 5)
+  errcheck("unresolved call signature", mf, 5, 5, 5)
+  errcheck("unresolved call signature", mf, 5, "5")
+  mf:define(nil, "number", "number")
+  errcheck("unresolved call signature", mf, 5, 5)
+end
 
