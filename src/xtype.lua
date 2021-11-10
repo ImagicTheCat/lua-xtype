@@ -450,7 +450,7 @@ end
 -- Global multifunctions namespace for binary operators.
 -- For interoperability between third-party types.
 -- map of Lua binary op name => multifunction
--- (add, sub, mul, div, mod, pow, concat, eq, lt, le)
+-- (add, sub, mul, div, mod, pow, concat, eq, lt, le, idiv, band, bor, bxor, shl, shr)
 xtype.op = {
   add = xtype.multifunction(),
   sub = xtype.multifunction(),
@@ -461,7 +461,13 @@ xtype.op = {
   concat = xtype.multifunction(),
   eq = xtype.multifunction(),
   lt = xtype.multifunction(),
-  le = xtype.multifunction()
+  le = xtype.multifunction(),
+  idiv = xtype.multifunction(),
+  band = xtype.multifunction(),
+  bor = xtype.multifunction(),
+  bxor = xtype.multifunction(),
+  shl = xtype.multifunction(),
+  shr = xtype.multifunction()
 }
 
 return xtype

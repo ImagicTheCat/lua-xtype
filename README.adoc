@@ -107,7 +107,7 @@ xtype.multifunction()
 -- Global multifunctions namespace for binary operators.
 -- For interoperability between third-party types.
 -- map of Lua binary op name => multifunction
--- (add, sub, mul, div, mod, pow, concat, eq, lt, le)
+-- (add, sub, mul, div, mod, pow, concat, eq, lt, le, idiv, band, bor, bxor, shl, shr)
 xtype.op
 
 -- Low-level API.
