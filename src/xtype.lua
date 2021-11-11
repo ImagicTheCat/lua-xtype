@@ -109,7 +109,7 @@ xtype.get = xtype_get
 xtype_is = function(v, t)
   check_type(t, 2)
   local vt = xtype_get(v)
-  if type(vt) == "table" then return vt.xtype_set[t]
+  if type(vt) == "table" then return vt.xtype_set[t] ~= nil
   else return vt == t end
 end
 xtype.is = xtype_is
@@ -172,7 +172,7 @@ end
 -- Check if a type is of type ot.
 function xtype.of(t, ot)
   check_type(t, 1); check_type(ot, 2)
-  if type(t) == "table" then return t.xtype_set[ot]
+  if type(t) == "table" then return t.xtype_set[ot] ~= nil
   else return t == ot end
 end
 
