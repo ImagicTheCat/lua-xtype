@@ -263,20 +263,32 @@ end
 multifunction.hashSign = mf_hash_sign
 
 -- Find candidate.
--- return candidate or nil if none found
---- candidate: {def, dist}
+-- return candidate or nothing if none found
+--- candidate: {.sign, .dist, .def}
+---- sign: call signature
+---- dist: distance from call signature
+---- def: candidate definition
 local function mf_find_candidate(self, sign)
   -- find candidates
   local candidates = {}
   for hash, def in pairs(self.definitions) do
     if #sign == #def.sign then -- same number of parameters
       local dist = sign_dist(sign, def.sign)
-      if dist then table.insert(candidates, {def, dist}) end
+      if dist then table.insert(candidates, {sign = sign, def = def, dist = dist}) end
     end
   end
   -- sort candidates
-  table.sort(candidates, function(a, b) return a[2] < b[2] end)
-  -- NOTE: check for ambiguity ?
+  table.sort(candidates, function(a, b) return a.dist < b.dist end)
+  -- check for ambiguity
+  if candidates[1] and candidates[2] and candidates[1].dist == candidates[2].dist then
+    -- generate ambiguity error
+    local candidate_signs = {}
+    for _, candidate in ipairs(candidates) do
+      if candidate.dist ~= candidates[1].dist then break end
+      table.insert(candidate_signs, "\t"..format_sign(candidate.def.sign))
+    end
+    error("ambiguous call signature "..format_sign(sign).."\ncandidates:\n"..table.concat(candidate_signs, "\n"))
+  end
   return candidates[1]
 end
 
@@ -292,7 +304,7 @@ local function mf_resolve_sign(self, sign)
     end
     self.candidates[hash] = candidate
   end
-  return candidate and candidate[1].f
+  return candidate and candidate.def.f
 end
 
 -- Unoptimized multifunction call.
@@ -305,7 +317,7 @@ local function mf_call(self, ...)
 end
 
 local mfcalls = {}
--- Generate optimized mutifunction call.
+-- Generate optimized multifunction call.
 -- n: maximum number of parameters
 local function gen_opt_mfcall(n)
   -- cache check
@@ -323,13 +335,13 @@ return function(self, ...)
   $hash_code
   --
   local candidate = self.candidates[hash]
-  if candidate then return candidate[1].f(...) end
+  if candidate then return candidate.def.f(...) end
 
   -- fallback to unoptimized path
   return mf_call(self, ...)
 end
   ]=]
-  -- generate vararg/table-less hashing for each arguments count
+  -- generate table/vararg-less hashing for each arguments count
   local hcode = "if n == 0 then hash = self.hsign[1]\n"
   for i=1,n do
     hcode = hcode.."elseif n == "..i.." then\n"
@@ -366,11 +378,15 @@ function multifunction:define(f, ...)
     else -- new definition
       def = {f = f, sign = sign}
       self.definitions[hash] = def
-      -- update candidates (better match)
-      for _, candidate in pairs(self.candidates) do
-        local dist = sign_dist(candidate[1].sign, sign)
-        if dist and dist < candidate[2] then -- update if better candidate
-          candidate[1], candidate[2] = def, dist
+      -- update candidates (better or equivalent match)
+      for chash, candidate in pairs(self.candidates) do
+        local dist = sign_dist(candidate.sign, sign)
+        if dist then
+          if dist < candidate.dist then -- update if better candidate
+            candidate.def, candidate.dist = def, dist
+          elseif dist == candidate.dist then -- remove candidate on ambiguity
+            self.candidates[chash] = nil
+          end
         end
       end
     end
@@ -380,7 +396,7 @@ function multifunction:define(f, ...)
       self.definitions[hash] = nil
       -- remove candidates (removed definition)
       for chash, candidate in pairs(self.candidates) do
-        if candidate[1] == def then self.candidates[chash] = nil end
+        if candidate.def == def then self.candidates[chash] = nil end
       end
     end
   end
@@ -420,7 +436,7 @@ function xtype.multifunction()
     hsign = new_hsign(),
     definitions = {}, -- map of sign hash => {.f, .sign}
     generators = {}, -- set of generator functions
-    candidates = {}, -- cached candidates, map of call sign hash => {def, dist}
+    candidates = {}, -- cached candidates, map of call sign hash => {.sign, .dist, .def}
     max_calln = 0, -- maximum call parameters
     call = default_call
   }, multifunction_mt)

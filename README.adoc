@@ -48,8 +48,6 @@ A non-primitive type can inherit from other types, building a stack of types. Th
 
 A multifunction is a function that can have multiple definitions, each associated to a specific signature. When called, it resolves the call by selecting a matching definition from the call signature.
 
-WARNING: Ambiguities are ignored. If two definitions are candidates with the same weight, one will be selected arbitrarily.
-
 ==== Metaprogramming
 
 We can use Lua as its own metaprogramming language: we can generate Lua code from Lua.

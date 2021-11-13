@@ -28,5 +28,11 @@ do -- test multifunction
   errcheck("unresolved call signature", mf, 5, "5")
   mf:define(nil, "number", "number")
   errcheck("unresolved call signature", mf, 5, 5)
+  -- test ambiguity
+  local A = xtype.create("A")
+  local B = xtype.create("B")
+  local C = xtype.create("C", A, B)
+  mf:define(function() end, A, B)
+  mf:define(function() end, B, A)
+  errcheck("ambiguous call signature", mf.resolve, mf, C, C)
 end
-
