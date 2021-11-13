@@ -11,10 +11,10 @@ endif::[]
 
 *xtype*, or Extended Type, is a dynamic type system library for Lua.
 
-Sometimes, advanced type checking code is needed to implement specific abstractions; *xtype* aims to fill that need.
+Sometimes, advanced type checking code is needed to implement specific abstractions; *xtype* aims to fulfill that need.
 
 .Incentives:
-Automation:: Prevent writing redundant type checking code.
+Simplification:: Prevent writing redundant type checking code.
 Interoperability:: Having a general low-level type system library can ease the interactions of third-party code.
 Metaprogramming / Genericity:: Exploit the dynamic nature of Lua to generate definitions on-the-fly.
 
@@ -48,7 +48,7 @@ A non-primitive type can inherit from other types, building a stack of types. Th
 
 A multifunction is a function that can have multiple definitions, each associated to a specific signature. When called, it resolves the call by selecting a matching definition from the call signature.
 
-WARNING: Ambiguities are ignored.
+WARNING: Ambiguities are ignored. If two definitions are candidates with the same weight, one will be selected arbitrarily.
 
 ==== Metaprogramming
 

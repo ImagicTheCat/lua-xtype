@@ -420,7 +420,7 @@ function xtype.multifunction()
     hsign = new_hsign(),
     definitions = {}, -- map of sign hash => {.f, .sign}
     generators = {}, -- set of generator functions
-    candidates = {}, -- cached candidates, map of hash => {def, dist}
+    candidates = {}, -- cached candidates, map of call sign hash => {def, dist}
     max_calln = 0, -- maximum call parameters
     call = default_call
   }, multifunction_mt)
