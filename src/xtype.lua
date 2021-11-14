@@ -31,7 +31,7 @@ do
 end
 local loadstring = loadstring or load
 local table_unpack = table.unpack or unpack
-local type, select = type, select
+local type, select, getmetatable, pcall = type, select, getmetatable, pcall
 local table_pack = table.pack or function(...)
   local t = {...}
   t.n = select("#", ...)
@@ -88,6 +88,8 @@ function xtype.ctype(ctype, t)
   return ctype_types[id]
 end
 
+local function cdata_get(v) return v.__xtype end
+
 -- Get terminal type of a value.
 local function xtype_get(v)
   local v_type = type(v)
@@ -97,7 +99,7 @@ local function xtype_get(v)
   elseif v_type == "cdata" then
     local xt = ctype_types[tonumber(ffi.typeof(v))]
     if not xt then -- try to acquire type from field
-      local ok; ok, xt = pcall(function(v) return v.__xtype end, v)
+      local ok; ok, xt = pcall(cdata_get, v)
       if ok then xtype.ctype(ffi.typeof(v), xt) end
     end
     return xt or v_type
