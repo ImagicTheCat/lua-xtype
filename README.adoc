@@ -18,7 +18,7 @@ Simplification:: Prevent writing redundant type checking code.
 Interoperability:: Having a general low-level type system library can ease the interactions of third-party code.
 Metaprogramming / Genericity:: Exploit the dynamic nature of Lua to generate definitions on-the-fly.
 
-See link:src[].
+See link:src[], link:rockspecs[] or https://luarocks.org/modules/imagicthecat-0a6b669a3a/xtype[luarocks].
 
 == Concepts
 
