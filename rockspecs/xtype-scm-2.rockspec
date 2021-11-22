@@ -1,8 +1,7 @@
 package = "xtype"
-version = "1.0-1"
+version = "scm-2"
 source = {
   url = "git://github.com/ImagicTheCat/lua-xtype",
-  tag = "1.0"
 }
 
 description = {
@@ -21,6 +20,6 @@ dependencies = {
 build = {
   type = "builtin",
   modules = {
-    Luaseq = "src/xtype.lua"
+    xtype = "src/xtype.lua"
   }
 }
