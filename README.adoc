@@ -106,6 +106,9 @@ xtype.multifunction()
 -- For interoperability between third-party types.
 -- map of Lua binary op name => multifunction
 -- (add, sub, mul, div, mod, pow, concat, eq, lt, le, idiv, band, bor, bxor, shl, shr)
+--
+-- Warning: the `eq` metamethod has a default behavior; it should not throw an
+-- error on resolution failure.
 xtype.op
 
 -- Low-level API.
