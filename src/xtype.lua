@@ -359,7 +359,7 @@ end
   hcode = hcode.."end\n"
   local code = xtype.tplsub(main, {hash_code = hcode})
   -- compile
-  mfcall = loadstring(code, "xtype multifunction call("..n..")")(xtype_get, mf_call)
+  mfcall = loadstring(code, "=[xtype-opt-mfcall #"..n.."]")(xtype_get, mf_call)
   -- cache
   mfcalls[n] = mfcall
   return mfcall
