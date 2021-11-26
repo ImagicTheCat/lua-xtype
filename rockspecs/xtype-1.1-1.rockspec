@@ -1,8 +1,8 @@
 package = "xtype"
-version = "1.0-2"
+version = "1.1-1"
 source = {
   url = "git://github.com/ImagicTheCat/lua-xtype",
-  tag = "1.0"
+  tag = "1.1"
 }
 
 description = {
