@@ -216,16 +216,22 @@ end
 xtype.formatSign = format_sign
 
 -- Stack distance to another type from a terminal type.
+-- ot: support "any" keyword
 -- return distance or nil/nothing if not of type ot
 local function type_dist(t, ot)
-  if type(t) == "string" then return t == ot and 0 or nil end
-  for i, st in ipairs(t.xtype_stack) do
-    if st == ot then return i-1 end
+  if ot == "any" then -- special keyword
+    return type(t) == "string" and 1 or #t.xtype_stack
+  else
+    if type(t) == "string" then return t == ot and 0 or nil end
+    for i, st in ipairs(t.xtype_stack) do
+      if st == ot then return i-1 end
+    end
   end
 end
 xtype.typeDist = type_dist
 
 -- Distance to another signature from a call signature.
+-- osign: support "any" keyword
 -- return distance or nothing if not generalizable to osign
 local function sign_dist(sign, osign)
   local dist = 0
@@ -360,6 +366,9 @@ end
 end
 
 -- Define a multifunction signature.
+-- The keyword "any" matches any type. It is the least specific match for a
+-- given terminal type.
+--
 -- f: definition function; nil to undefine
 -- ...: signature, list of types
 function multifunction:define(f, ...)
@@ -405,7 +414,7 @@ function multifunction:define(f, ...)
 end
 
 -- Get the resolved function for a specific signature.
--- ...: call signature, list of types
+-- ...: call signature, list of (terminal) types
 -- return function or nil without a matching definition
 function multifunction:resolve(...)
   local sign = check_sign(...)
@@ -418,7 +427,7 @@ end
 -- eventually define new signatures.
 --
 -- f(multifunction, ...): called to generate new definitions
---- ...: call signature, list of types
+--- ...: call signature, list of (terminal) types
 function multifunction:addGenerator(f)
   self.generators[f] = true
 end
@@ -467,11 +476,10 @@ end
 
 -- Global multifunctions namespace for binary operators.
 -- For interoperability between third-party types.
+-- Equality (eq) has a default behavior defined as: eq(any, any) -> false
+--
 -- map of Lua binary op name => multifunction
 -- (add, sub, mul, div, mod, pow, concat, eq, lt, le, idiv, band, bor, bxor, shl, shr)
---
--- Warning: the `eq` metamethod has a default behavior; it should not throw an
--- error on resolution failure.
 xtype.op = {
   add = xtype.multifunction(),
   sub = xtype.multifunction(),
@@ -490,5 +498,8 @@ xtype.op = {
   shl = xtype.multifunction(),
   shr = xtype.multifunction()
 }
+
+-- Default eq behavior.
+xtype.op.eq:define(function() return false end, "any", "any")
 
 return xtype

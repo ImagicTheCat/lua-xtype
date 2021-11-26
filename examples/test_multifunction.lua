@@ -3,16 +3,12 @@ package.path = "src/?.lua;"..package.path
 local xtype = require("xtype")
 
 do -- Test operators.
-  local op_add = xtype.multifunction()
-  local op_mul = xtype.multifunction()
-  local op_eq = xtype.multifunction()
-
   local function build_type(t)
     local ins_mt = {
       xtype = t,
-      __add = op_add,
-      __mul = op_mul,
-      __eq = op_eq
+      __add = xtype.op.add,
+      __mul = xtype.op.mul,
+      __eq = xtype.op.eq
     }
     local type_mt = {
       xtype = "xtype",
@@ -26,31 +22,34 @@ do -- Test operators.
   local Fruits = build_type(xtype.create("Fruits"))
   local Apples = build_type(xtype.create("Apples", Fruits))
   local Oranges = build_type(xtype.create("Oranges", Fruits))
+  local Rocks = build_type(xtype.create("Rocks"))
 
-  op_add:define(function(a, b) return Apples(a.v+b.v) end, Apples, Apples)
-  op_add:define(function(a, b) return Oranges(a.v+b.v) end, Oranges, Oranges)
-  op_add:define(function(a, b) return Fruits(a.v+b.v) end, Fruits, Fruits)
-  op_mul:define(function(a, f) return Apples(a.v*f) end, Apples, "number")
-  op_mul:define(function(a, f) return Oranges(a.v*f) end, Oranges, "number")
-  op_mul:define(function(a, f) return Fruits(a.v*f) end, Fruits, "number")
-  op_eq:define(function(a, b) return a.v == b.v end, Apples, Apples)
-  op_eq:define(function(a, b) return a.v == b.v end, Oranges, Oranges)
-  op_eq:define(function(a, b)
+  xtype.op.add:define(function(a, b) return Apples(a.v+b.v) end, Apples, Apples)
+  xtype.op.add:define(function(a, b) return Oranges(a.v+b.v) end, Oranges, Oranges)
+  xtype.op.add:define(function(a, b) return Fruits(a.v+b.v) end, Fruits, Fruits)
+  xtype.op.mul:define(function(a, f) return Apples(a.v*f) end, Apples, "number")
+  xtype.op.mul:define(function(a, f) return Oranges(a.v*f) end, Oranges, "number")
+  xtype.op.mul:define(function(a, f) return Fruits(a.v*f) end, Fruits, "number")
+  xtype.op.eq:define(function(a, b) return a.v == b.v end, Apples, Apples)
+  xtype.op.eq:define(function(a, b) return a.v == b.v end, Oranges, Oranges)
+  xtype.op.eq:define(function(a, b)
     return xtype.get(a) == xtype.get(b) and a.v == b.v
   end, Fruits, Fruits)
 
   local apples = Apples(5)
   local oranges = Oranges(5)
   -- checks
-  assert(xtype.is(op_eq, "multifunction"))
-  assert(xtype.get(op_eq) == "multifunction")
+  assert(xtype.is(xtype.op.eq, "multifunction"))
+  assert(xtype.get(xtype.op.eq) == "multifunction")
   assert(apples+apples == Apples(10))
-  assert(op_add:call(apples, apples) == Apples(10)) -- alternative
-  assert(op_add:resolve(Apples, Apples)(apples, apples) == Apples(10)) -- alternative
+  assert(xtype.op.add:call(apples, apples) == Apples(10)) -- alternative
+  assert(xtype.op.add:resolve(Apples, Apples)(apples, apples) == Apples(10)) -- alternative
   assert(not (apples+oranges == Apples(10)))
   assert(apples+oranges == Fruits(10))
   assert(oranges+apples == Fruits(10))
   assert(apples*3 == Apples(15))
+  --- check equality default behavior
+  assert(Rocks(5) ~= Apples(5))
 end
 do -- Test resolution order.
   -- types

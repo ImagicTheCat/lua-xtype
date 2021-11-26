@@ -104,11 +104,10 @@ xtype.multifunction()
 
 -- Global multifunctions namespace for binary operators.
 -- For interoperability between third-party types.
+-- Equality (eq) has a default behavior defined as: eq(any, any) -> false
+--
 -- map of Lua binary op name => multifunction
 -- (add, sub, mul, div, mod, pow, concat, eq, lt, le, idiv, band, bor, bxor, shl, shr)
---
--- Warning: the `eq` metamethod has a default behavior; it should not throw an
--- error on resolution failure.
 xtype.op
 
 -- Low-level API.
@@ -117,6 +116,7 @@ xtype.op
 -- type to the least specific inherited types.
 
 -- Stack distance to another type from a terminal type.
+-- ot: support "any" keyword
 -- return distance or nil/nothing if not of type ot
 xtype.typeDist(t, ot)
 
@@ -125,6 +125,7 @@ xtype.typeDist(t, ot)
 xtype.checkSign(...)
 
 -- Distance to another signature from a call signature.
+-- osign: support "any" keyword
 -- return distance or nothing if not generalizable to osign
 xtype.signDist(sign, osign)
 
@@ -152,6 +153,9 @@ xtype.tplsub(tpl, args)
 [source, lua]
 ----
 -- Define a multifunction signature.
+-- The keyword "any" matches any type. It is the least specific match for a
+-- given terminal type.
+--
 -- f: definition function; nil to undefine
 -- ...: signature, list of types
 multifunction:define(f, ...)
@@ -162,11 +166,11 @@ multifunction:define(f, ...)
 -- eventually define new signatures.
 --
 -- f(multifunction, ...): called to generate new definitions
---- ...: call signature, list of types
+--- ...: call signature, list of (terminal) types
 multifunction:addGenerator(f)
 
 -- Get the resolved function for a specific signature.
--- ...: call signature, list of types
+-- ...: call signature, list of (terminal) types
 -- return function or nil without a matching definition
 multifunction:resolve(...)
 
